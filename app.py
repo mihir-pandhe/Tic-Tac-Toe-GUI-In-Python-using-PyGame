@@ -20,11 +20,19 @@ BG_COLOR = (28, 170, 156)
 LINE_COLOR = (23, 145, 135)
 CIRCLE_COLOR = (239, 231, 200)
 CROSS_COLOR = (66, 66, 66)
+TEXT_COLOR = (0, 0, 0)
 
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 screen.fill(BG_COLOR)
+
+
+font = pygame.font.Font(None, 74)
+
+
+board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
+player = 1
 
 
 def draw_lines():
@@ -42,7 +50,93 @@ def draw_lines():
     )
 
 
+def draw_figures():
+    for row in range(BOARD_ROWS):
+        for col in range(BOARD_COLS):
+            if board[row][col] == 1:
+                pygame.draw.circle(
+                    screen,
+                    CIRCLE_COLOR,
+                    (
+                        int(col * SQUARE_SIZE + SQUARE_SIZE // 2),
+                        int(row * SQUARE_SIZE + SQUARE_SIZE // 2),
+                    ),
+                    CIRCLE_RADIUS,
+                    CIRCLE_WIDTH,
+                )
+            elif board[row][col] == 2:
+                pygame.draw.line(
+                    screen,
+                    CROSS_COLOR,
+                    (
+                        col * SQUARE_SIZE + SPACE,
+                        row * SQUARE_SIZE + SQUARE_SIZE - SPACE,
+                    ),
+                    (
+                        col * SQUARE_SIZE + SQUARE_SIZE - SPACE,
+                        row * SQUARE_SIZE + SPACE,
+                    ),
+                    CROSS_WIDTH,
+                )
+                pygame.draw.line(
+                    screen,
+                    CROSS_COLOR,
+                    (col * SQUARE_SIZE + SPACE, row * SQUARE_SIZE + SPACE),
+                    (
+                        col * SQUARE_SIZE + SQUARE_SIZE - SPACE,
+                        row * SQUARE_SIZE + SQUARE_SIZE - SPACE,
+                    ),
+                    CROSS_WIDTH,
+                )
+
+
+def draw_message(message):
+    text = font.render(message, True, TEXT_COLOR)
+    screen.blit(
+        text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2)
+    )
+
+
 draw_lines()
+
+
+def mark_square(row, col, player):
+    if board[row][col] == 0:
+        board[row][col] = player
+
+
+def available_square(row, col):
+    return board[row][col] == 0
+
+
+def is_board_full():
+    for row in range(BOARD_ROWS):
+        for col in range(BOARD_COLS):
+            if board[row][col] == 0:
+                return False
+    return True
+
+
+def check_win(player):
+    for col in range(BOARD_COLS):
+        if (
+            board[0][col] == player
+            and board[1][col] == player
+            and board[2][col] == player
+        ):
+            return True
+    for row in range(BOARD_ROWS):
+        if (
+            board[row][0] == player
+            and board[row][1] == player
+            and board[row][2] == player
+        ):
+            return True
+    if board[2][0] == player and board[1][1] == player and board[0][2] == player:
+        return True
+    if board[0][0] == player and board[1][1] == player and board[2][2] == player:
+        return True
+    return False
 
 
 while True:
@@ -51,5 +145,30 @@ while True:
             pygame.quit()
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            print(event.pos)
+            mouseX = event.pos[0]
+            mouseY = event.pos[1]
+
+            clicked_row = int(mouseY // SQUARE_SIZE)
+            clicked_col = int(mouseX // SQUARE_SIZE)
+
+            if available_square(clicked_row, clicked_col):
+                mark_square(clicked_row, clicked_col, player)
+                draw_figures()
+
+                if check_win(player):
+                    draw_message(f"Player {player} wins!")
+                    pygame.display.update()
+                    pygame.time.wait(2000)
+                    pygame.quit()
+                    sys.exit()
+
+                if is_board_full():
+                    draw_message("It's a draw!")
+                    pygame.display.update()
+                    pygame.time.wait(2000)
+                    pygame.quit()
+                    sys.exit()
+
+                player = player % 2 + 1
+
     pygame.display.update()
