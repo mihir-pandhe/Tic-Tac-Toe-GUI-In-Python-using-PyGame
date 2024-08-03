@@ -1,7 +1,9 @@
 import pygame
 import sys
 
+
 pygame.init()
+
 
 WIDTH, HEIGHT = 600, 600
 LINE_WIDTH = 15
@@ -16,17 +18,24 @@ LINE_COLOR = (23, 145, 135)
 CIRCLE_COLOR = (239, 231, 200)
 CROSS_COLOR = (66, 66, 66)
 TEXT_COLOR = (0, 0, 0)
+STATS_COLOR = (255, 255, 255)
+
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 50)
 
+
 board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
 player = 1
 history = []
 undone_moves = []
 game_active = False
+player_stats = {
+    1: {"wins": 0, "losses": 0, "draws": 0},
+    2: {"wins": 0, "losses": 0, "draws": 0},
+}
 
 
 def draw_lines():
@@ -102,7 +111,7 @@ def draw_message(message, restart=False):
             restart_text,
             (
                 WIDTH // 2 - restart_text.get_width() // 2,
-                HEIGHT // 2 + text.get_height() // 2,
+                HEIGHT // 2 + text.get_height(),
             ),
         )
     pygame.display.update()
@@ -114,6 +123,34 @@ def draw_start_screen():
     start_button = small_font.render("Press Enter to Start", True, TEXT_COLOR)
     screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3))
     screen.blit(start_button, (WIDTH // 2 - start_button.get_width() // 2, HEIGHT // 2))
+    pygame.display.update()
+
+
+def draw_game_over_animation():
+    for _ in range(3):
+        screen.fill(BG_COLOR)
+        draw_lines()
+        draw_figures()
+        pygame.display.update()
+        pygame.time.wait(500)
+        screen.fill(BG_COLOR)
+        pygame.display.update()
+        pygame.time.wait(500)
+
+
+def draw_stats():
+    stats_text = small_font.render(
+        f"Player 1: {player_stats[1]['wins']} Wins, {player_stats[1]['losses']} Losses, {player_stats[1]['draws']} Draws",
+        True,
+        STATS_COLOR,
+    )
+    screen.blit(stats_text, (10, 10))
+    stats_text = small_font.render(
+        f"Player 2: {player_stats[2]['wins']} Wins, {player_stats[2]['losses']} Losses, {player_stats[2]['draws']} Draws",
+        True,
+        STATS_COLOR,
+    )
+    screen.blit(stats_text, (10, 40))
     pygame.display.update()
 
 
@@ -181,6 +218,7 @@ def reset_game():
 
 draw_start_screen()
 
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -191,10 +229,11 @@ while True:
                 game_active = True
                 reset_game()
                 draw_lines()
+                draw_stats()
             elif event.key == pygame.K_q:
                 pygame.quit()
                 sys.exit()
-            elif event.key == pygame.K_u and game_active:  # Undo move
+            elif event.key == pygame.K_u and game_active:
                 undo_move()
                 draw_lines()
                 draw_figures()
@@ -202,6 +241,7 @@ while True:
                 if not game_active:
                     reset_game()
                     draw_lines()
+                    draw_stats()
                 elif game_active:
                     redo_move()
                     draw_lines()
@@ -217,9 +257,13 @@ while True:
                 draw_figures()
 
                 if check_win(player):
+                    player_stats[player]["wins"] += 1
+                    player_stats[3 - player]["losses"] += 1
                     draw_message(f"Player {player} wins!", restart=True)
                     game_active = False
                 elif is_board_full():
+                    player_stats[1]["draws"] += 1
+                    player_stats[2]["draws"] += 1
                     draw_message("It's a draw!", restart=True)
                     game_active = False
                 else:
