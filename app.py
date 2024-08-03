@@ -5,14 +5,12 @@ pygame.init()
 
 WIDTH, HEIGHT = 600, 600
 LINE_WIDTH = 15
-BOARD_ROWS = 3
-BOARD_COLS = 3
+BOARD_ROWS, BOARD_COLS = 3, 3
 SQUARE_SIZE = WIDTH // BOARD_COLS
 CIRCLE_RADIUS = SQUARE_SIZE // 3
 CIRCLE_WIDTH = 15
 CROSS_WIDTH = 25
 SPACE = SQUARE_SIZE // 4
-
 BG_COLOR = (28, 170, 156)
 LINE_COLOR = (23, 145, 135)
 CIRCLE_COLOR = (239, 231, 200)
@@ -22,10 +20,12 @@ TEXT_COLOR = (0, 0, 0)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 font = pygame.font.Font(None, 74)
+small_font = pygame.font.Font(None, 50)
 
 board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
 player = 1
 history = []
+game_active = True
 
 
 def draw_lines():
@@ -84,7 +84,7 @@ def draw_figures():
                 )
 
 
-def draw_message(message):
+def draw_message(message, restart=False):
     screen.fill(BG_COLOR)
     draw_lines()
     draw_figures()
@@ -92,8 +92,41 @@ def draw_message(message):
     screen.blit(
         text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2)
     )
+
+    if restart:
+        restart_text = small_font.render(
+            "Press R to Restart or Q to Quit", True, TEXT_COLOR
+        )
+        screen.blit(
+            restart_text,
+            (
+                WIDTH // 2 - restart_text.get_width() // 2,
+                HEIGHT // 2 + text.get_height(),
+            ),
+        )
+
     pygame.display.update()
-    pygame.time.wait(2000)
+
+
+def draw_start_screen():
+    screen.fill(BG_COLOR)
+    title = font.render("Tic Tac Toe", True, TEXT_COLOR)
+    start_button = small_font.render("Press Enter to Start", True, TEXT_COLOR)
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3))
+    screen.blit(start_button, (WIDTH // 2 - start_button.get_width() // 2, HEIGHT // 2))
+    pygame.display.update()
+
+
+def draw_game_over_animation():
+    for _ in range(3):
+        screen.fill(BG_COLOR)
+        draw_lines()
+        draw_figures()
+        pygame.display.update()
+        pygame.time.wait(500)
+        screen.fill(BG_COLOR)
+        pygame.display.update()
+        pygame.time.wait(500)
 
 
 def mark_square(row, col, player):
@@ -142,13 +175,30 @@ def check_win(player):
     return False
 
 
-draw_lines()
+def reset_game():
+    global player, history, game_active
+    board[:] = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
+    history.clear()
+    player = 1
+    game_active = True
+
+
+draw_start_screen()
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                game_active = True
+                reset_game()
+                draw_lines()
+            elif event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN and game_active:
             mouseX = event.pos[0]
             mouseY = event.pos[1]
 
@@ -161,18 +211,24 @@ while True:
                 draw_figures()
 
                 if check_win(player):
-                    draw_message(f"Player {player} wins!")
-                    board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
-                    history.clear()
-                    draw_lines()
+                    draw_game_over_animation()
+                    draw_message(f"Player {player} wins!", restart=True)
+                    game_active = False
                 elif is_board_full():
-                    draw_message("It's a draw!")
-                    board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
-                    history.clear()
-                    draw_lines()
+                    draw_message("It's a draw!", restart=True)
+                    game_active = False
 
                 player = player % 2 + 1
             else:
                 draw_message("Invalid Move!")
+
+        if not game_active:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r]:
+                reset_game()
+                draw_lines()
+            elif keys[pygame.K_q]:
+                pygame.quit()
+                sys.exit()
 
     pygame.display.update()
