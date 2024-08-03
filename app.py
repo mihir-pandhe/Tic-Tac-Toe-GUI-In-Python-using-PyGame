@@ -1,7 +1,9 @@
 import pygame
 import sys
 
+
 pygame.init()
+
 
 WIDTH, HEIGHT = 600, 600
 LINE_WIDTH = 15
@@ -17,14 +19,17 @@ CIRCLE_COLOR = (239, 231, 200)
 CROSS_COLOR = (66, 66, 66)
 TEXT_COLOR = (0, 0, 0)
 
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 50)
 
+
 board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
 player = 1
 history = []
+undone_moves = []
 game_active = True
 
 
@@ -133,12 +138,21 @@ def mark_square(row, col, player):
     if board[row][col] == 0:
         board[row][col] = player
         history.append((row, col, player))
+        undone_moves.clear()
 
 
 def undo_move():
     if history:
         row, col, player = history.pop()
         board[row][col] = 0
+        undone_moves.append((row, col, player))
+
+
+def redo_move():
+    if undone_moves:
+        row, col, player = undone_moves.pop()
+        board[row][col] = player
+        history.append((row, col, player))
 
 
 def available_square(row, col):
@@ -146,11 +160,9 @@ def available_square(row, col):
 
 
 def is_board_full():
-    for row in range(BOARD_ROWS):
-        for col in range(BOARD_COLS):
-            if board[row][col] == 0:
-                return False
-    return True
+    return all(
+        board[row][col] != 0 for row in range(BOARD_ROWS) for col in range(BOARD_COLS)
+    )
 
 
 def check_win(player):
@@ -176,14 +188,16 @@ def check_win(player):
 
 
 def reset_game():
-    global player, history, game_active
+    global player, history, undone_moves, game_active
     board[:] = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
     history.clear()
+    undone_moves.clear()
     player = 1
     game_active = True
 
 
 draw_start_screen()
+
 
 while True:
     for event in pygame.event.get():
@@ -198,6 +212,16 @@ while True:
             elif event.key == pygame.K_q:
                 pygame.quit()
                 sys.exit()
+            elif event.key == pygame.K_u:
+                if game_active:
+                    undo_move()
+                    draw_lines()
+                    draw_figures()
+            elif event.key == pygame.K_r:
+                if game_active:
+                    redo_move()
+                    draw_lines()
+                    draw_figures()
         if event.type == pygame.MOUSEBUTTONDOWN and game_active:
             mouseX = event.pos[0]
             mouseY = event.pos[1]
