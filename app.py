@@ -1,9 +1,7 @@
 import pygame
 import sys
 
-
 pygame.init()
-
 
 WIDTH, HEIGHT = 600, 600
 LINE_WIDTH = 15
@@ -19,34 +17,36 @@ CIRCLE_COLOR = (239, 231, 200)
 CROSS_COLOR = (66, 66, 66)
 TEXT_COLOR = (0, 0, 0)
 
-
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 50)
 
-
 board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
 player = 1
 history = []
 undone_moves = []
-game_active = True
+game_active = False
 
 
 def draw_lines():
     screen.fill(BG_COLOR)
-    pygame.draw.line(
-        screen, LINE_COLOR, (0, SQUARE_SIZE), (WIDTH, SQUARE_SIZE), LINE_WIDTH
-    )
-    pygame.draw.line(
-        screen, LINE_COLOR, (0, 2 * SQUARE_SIZE), (WIDTH, 2 * SQUARE_SIZE), LINE_WIDTH
-    )
-    pygame.draw.line(
-        screen, LINE_COLOR, (SQUARE_SIZE, 0), (SQUARE_SIZE, HEIGHT), LINE_WIDTH
-    )
-    pygame.draw.line(
-        screen, LINE_COLOR, (2 * SQUARE_SIZE, 0), (2 * SQUARE_SIZE, HEIGHT), LINE_WIDTH
-    )
+    for row in range(1, BOARD_ROWS):
+        pygame.draw.line(
+            screen,
+            LINE_COLOR,
+            (0, row * SQUARE_SIZE),
+            (WIDTH, row * SQUARE_SIZE),
+            LINE_WIDTH,
+        )
+    for col in range(1, BOARD_COLS):
+        pygame.draw.line(
+            screen,
+            LINE_COLOR,
+            (col * SQUARE_SIZE, 0),
+            (col * SQUARE_SIZE, HEIGHT),
+            LINE_WIDTH,
+        )
 
 
 def draw_figures():
@@ -90,14 +90,10 @@ def draw_figures():
 
 
 def draw_message(message, restart=False):
-    screen.fill(BG_COLOR)
-    draw_lines()
-    draw_figures()
     text = font.render(message, True, TEXT_COLOR)
     screen.blit(
         text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2)
     )
-
     if restart:
         restart_text = small_font.render(
             "Press R to Restart or Q to Quit", True, TEXT_COLOR
@@ -106,10 +102,9 @@ def draw_message(message, restart=False):
             restart_text,
             (
                 WIDTH // 2 - restart_text.get_width() // 2,
-                HEIGHT // 2 + text.get_height(),
+                HEIGHT // 2 + text.get_height() // 2,
             ),
         )
-
     pygame.display.update()
 
 
@@ -120,18 +115,6 @@ def draw_start_screen():
     screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 3))
     screen.blit(start_button, (WIDTH // 2 - start_button.get_width() // 2, HEIGHT // 2))
     pygame.display.update()
-
-
-def draw_game_over_animation():
-    for _ in range(3):
-        screen.fill(BG_COLOR)
-        draw_lines()
-        draw_figures()
-        pygame.display.update()
-        pygame.time.wait(500)
-        screen.fill(BG_COLOR)
-        pygame.display.update()
-        pygame.time.wait(500)
 
 
 def mark_square(row, col, player):
@@ -198,36 +181,35 @@ def reset_game():
 
 draw_start_screen()
 
-
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
+            if event.key == pygame.K_RETURN and not game_active:
                 game_active = True
                 reset_game()
                 draw_lines()
             elif event.key == pygame.K_q:
                 pygame.quit()
                 sys.exit()
-            elif event.key == pygame.K_u:
-                if game_active:
-                    undo_move()
-                    draw_lines()
-                    draw_figures()
+            elif event.key == pygame.K_u and game_active:  # Undo move
+                undo_move()
+                draw_lines()
+                draw_figures()
             elif event.key == pygame.K_r:
-                if game_active:
+                if not game_active:
+                    reset_game()
+                    draw_lines()
+                elif game_active:
                     redo_move()
                     draw_lines()
                     draw_figures()
         if event.type == pygame.MOUSEBUTTONDOWN and game_active:
-            mouseX = event.pos[0]
-            mouseY = event.pos[1]
-
-            clicked_row = int(mouseY // SQUARE_SIZE)
-            clicked_col = int(mouseX // SQUARE_SIZE)
+            mouseX, mouseY = event.pos
+            clicked_row = mouseY // SQUARE_SIZE
+            clicked_col = mouseX // SQUARE_SIZE
 
             if available_square(clicked_row, clicked_col):
                 mark_square(clicked_row, clicked_col, player)
@@ -235,24 +217,14 @@ while True:
                 draw_figures()
 
                 if check_win(player):
-                    draw_game_over_animation()
                     draw_message(f"Player {player} wins!", restart=True)
                     game_active = False
                 elif is_board_full():
                     draw_message("It's a draw!", restart=True)
                     game_active = False
-
-                player = player % 2 + 1
+                else:
+                    player = 3 - player
             else:
                 draw_message("Invalid Move!")
-
-        if not game_active:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_r]:
-                reset_game()
-                draw_lines()
-            elif keys[pygame.K_q]:
-                pygame.quit()
-                sys.exit()
 
     pygame.display.update()
