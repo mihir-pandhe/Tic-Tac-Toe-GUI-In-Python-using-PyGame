@@ -1,9 +1,7 @@
 import pygame
 import sys
 
-
 pygame.init()
-
 
 WIDTH, HEIGHT = 600, 600
 LINE_WIDTH = 15
@@ -15,27 +13,23 @@ CIRCLE_WIDTH = 15
 CROSS_WIDTH = 25
 SPACE = SQUARE_SIZE // 4
 
-
 BG_COLOR = (28, 170, 156)
 LINE_COLOR = (23, 145, 135)
 CIRCLE_COLOR = (239, 231, 200)
 CROSS_COLOR = (66, 66, 66)
 TEXT_COLOR = (0, 0, 0)
 
-
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
-screen.fill(BG_COLOR)
-
-
 font = pygame.font.Font(None, 74)
-
 
 board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
 player = 1
+history = []
 
 
 def draw_lines():
+    screen.fill(BG_COLOR)
     pygame.draw.line(
         screen, LINE_COLOR, (0, SQUARE_SIZE), (WIDTH, SQUARE_SIZE), LINE_WIDTH
     )
@@ -91,18 +85,27 @@ def draw_figures():
 
 
 def draw_message(message):
+    screen.fill(BG_COLOR)
+    draw_lines()
+    draw_figures()
     text = font.render(message, True, TEXT_COLOR)
     screen.blit(
         text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2)
     )
-
-
-draw_lines()
+    pygame.display.update()
+    pygame.time.wait(2000)
 
 
 def mark_square(row, col, player):
     if board[row][col] == 0:
         board[row][col] = player
+        history.append((row, col, player))
+
+
+def undo_move():
+    if history:
+        row, col, player = history.pop()
+        board[row][col] = 0
 
 
 def available_square(row, col):
@@ -139,6 +142,7 @@ def check_win(player):
     return False
 
 
+draw_lines()
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -153,22 +157,22 @@ while True:
 
             if available_square(clicked_row, clicked_col):
                 mark_square(clicked_row, clicked_col, player)
+                draw_lines()
                 draw_figures()
 
                 if check_win(player):
                     draw_message(f"Player {player} wins!")
-                    pygame.display.update()
-                    pygame.time.wait(2000)
-                    pygame.quit()
-                    sys.exit()
-
-                if is_board_full():
+                    board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
+                    history.clear()
+                    draw_lines()
+                elif is_board_full():
                     draw_message("It's a draw!")
-                    pygame.display.update()
-                    pygame.time.wait(2000)
-                    pygame.quit()
-                    sys.exit()
+                    board = [[0] * BOARD_COLS for _ in range(BOARD_ROWS)]
+                    history.clear()
+                    draw_lines()
 
                 player = player % 2 + 1
+            else:
+                draw_message("Invalid Move!")
 
     pygame.display.update()
